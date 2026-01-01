@@ -8,25 +8,34 @@
     <style>
         .task-done { opacity: 0.5; background-color: #f3f4f6 !important; }
         .task-done .task-text { text-decoration: line-through; }
+        
         body { 
             background-color: #f8fafc; 
             font-family: sans-serif; 
             -webkit-tap-highlight-color: transparent; 
-            height: 100vh;
+            /* שימוש ב-svh כדי להתאים בדיוק לגובה המסך הזמין בטלפון */
+            height: 100svh; 
             display: flex;
             flex-direction: column;
+            margin: 0;
+            overflow: hidden;
         }
-        /* אזור הרשימה עם גלילה פנימית */
+
+        /* אזור הרשימה עם גלילה - צמצמתי קצת את הגובה כדי להשאיר מקום למטה */
         .tasks-container { 
             overflow-y: auto; 
             flex-grow: 1;
-            padding-bottom: 20px;
+            padding-bottom: 80px; /* מרווח פנימי גדול לגלילה */
         }
+
         #editModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* מניעת הסתרה ע"י ה-Toolbar */
-        .safe-area-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 3rem); }
+        /* תיקון קריטי: מרווח תחתון שמתחשב ב-Toolbar של הטלפון */
+        .bottom-controls {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            margin-bottom: 40px; /* תוספת ביטחון לכפתורי הניווט */
+        }
     </style>
 </head>
 <body class="p-4">
@@ -53,7 +62,7 @@
 
         <div id="tasksList" class="tasks-container space-y-3 pr-1"></div>
 
-        <div class="shrink-0 safe-area-bottom mt-2">
+        <div class="shrink-0 bottom-controls">
             <button id="clearDoneBtn" onclick="clearDoneTasks()" class="hidden w-full py-2 border-2 border-dashed border-red-100 text-red-400 rounded-lg text-xs font-bold mb-3">
                 מחק משימות שבוצעו ✨
             </button>
@@ -75,13 +84,13 @@
         <div class="bg-white p-6 rounded-2xl w-80 shadow-2xl mx-4">
             <h3 class="font-bold mb-4 text-lg text-center text-slate-800">עריכת משימה</h3>
             <div class="space-y-3">
-                <input id="editTaskText" type="text" class="border w-full p-2.5 rounded-lg outline-none focus:border-indigo-400" placeholder="שם המשימה">
+                <input id="editTaskText" type="text" class="border w-full p-2.5 rounded-lg outline-none focus:border-indigo-400">
                 <input id="editTaskDate" type="date" class="border w-full p-2.5 rounded-lg outline-none focus:border-indigo-400">
                 <select id="editTaskCat" class="border w-full p-2.5 rounded-lg outline-none focus:border-indigo-400 bg-gray-50"></select>
             </div>
             <div class="flex gap-2 mt-6">
                 <button onclick="closeEditModal()" class="flex-grow bg-gray-100 py-2.5 rounded-xl font-bold text-slate-600">ביטול</button>
-                <button onclick="saveEdit()" class="flex-grow bg-indigo-600 text-white py-2.5 rounded-xl font-bold shadow-md">שמור שינויים</button>
+                <button onclick="saveEdit()" class="flex-grow bg-indigo-600 text-white py-2.5 rounded-xl font-bold shadow-md">שמור</button>
             </div>
         </div>
     </div>
@@ -119,7 +128,7 @@
         }
 
         function deleteCategory(name) {
-            if(confirm(`למחוק את ${name}? המשימות יישארו אך ללא קטגוריה.`)) {
+            if(confirm(`למחוק את ${name}?`)) {
                 categories = categories.filter(c => c.name !== name);
                 saveData();
                 renderAll();
@@ -167,22 +176,18 @@
         }
 
         function deleteTask(id) {
-            if(confirm("למחוק את המשימה?")) { tasks = tasks.filter(t => t.id !== id); saveData(); renderTasks(currentFilter); }
+            if(confirm("למחוק?")) { tasks = tasks.filter(t => t.id !== id); saveData(); renderTasks(currentFilter); }
         }
 
         function clearDoneTasks() {
-            if(confirm("למחוק את כל המשימות שבוצעו?")) { tasks = tasks.filter(t => !t.done); saveData(); renderTasks(currentFilter); }
+            if(confirm("למחוק בוצעו?")) { tasks = tasks.filter(t => !t.done); saveData(); renderTasks(currentFilter); }
         }
 
         function renderAll() {
             const select = document.getElementById('catSelect');
             select.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             const catMng = document.getElementById('catMngList');
-            catMng.innerHTML = categories.map(c => `
-                <span style="background-color: ${c.color}" class="px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1.5 border border-black/5">
-                    ${c.name} 
-                    <button onclick="deleteCategory('${c.name}')" class="opacity-30 hover:opacity-100 font-bold text-xs">×</button>
-                </span>`).join('');
+            catMng.innerHTML = categories.map(c => `<span style="background-color: ${c.color}" class="px-2 py-1 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">${c.name} <button onclick="deleteCategory('${c.name}')" class="opacity-30">×</button></span>`).join('');
             renderTasks(currentFilter);
         }
 
@@ -191,9 +196,9 @@
             const list = document.getElementById('tasksList');
             const today = new Date().toISOString().split('T')[0];
 
-            let filterHtml = `<button onclick="renderTasks('all')" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border transition-all ${currentFilter === 'all' ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">All</button>`;
-            filterHtml += `<button onclick="renderTasks('today')" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border transition-all ${currentFilter === 'today' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">🔥 Today</button>`;
-            filterHtml += categories.map(c => `<button onclick="renderTasks('${c.name}')" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border transition-all ${currentFilter === c.name ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">${c.name}</button>`).join('');
+            let filterHtml = `<button onclick="renderTasks('all')" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === 'all' ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">All</button>`;
+            filterHtml += `<button onclick="renderTasks('today')" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === 'today' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">🔥 Today</button>`;
+            filterHtml += categories.map(c => `<button onclick="renderTasks('${c.name}')" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === c.name ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">${c.name}</button>`).join('');
             document.getElementById('filterBar').innerHTML = filterHtml;
 
             let filtered = tasks;
@@ -209,25 +214,18 @@
             document.getElementById('progressText').innerText = `${percent}% Completed (${done}/${total})`;
             document.getElementById('clearDoneBtn').classList.toggle('hidden', done === 0);
 
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="text-center text-slate-300 mt-12 italic text-sm">No tasks found...</div>`;
-                return;
-            }
-
             list.innerHTML = filtered.map(t => {
                 const catObj = categories.find(c => c.name === t.cat) || {color: '#eee'};
                 return `
-                <div class="bg-white p-3.5 rounded-2xl shadow-sm flex items-center gap-3 border-r-[6px] transition-all ${t.done ? 'task-done' : 'hover:shadow-md'}" style="border-color: ${catObj.color}">
-                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-5 h-5 accent-indigo-600 cursor-pointer">
+                <div class="bg-white p-3.5 rounded-2xl shadow-sm flex items-center gap-3 border-r-[6px] ${t.done ? 'task-done' : ''}" style="border-color: ${catObj.color}">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-5 h-5 accent-indigo-600">
                     <div class="flex-grow" onclick="toggleTask(${t.id})">
                         <div class="task-text font-bold text-slate-700 text-[14px] leading-tight">${t.text}</div>
-                        <div class="text-[10px] font-bold text-slate-400 mt-1 uppercase">
-                            ${t.date === today ? '<span class="text-orange-500">Today</span>' : t.date} • ${t.cat}
-                        </div>
+                        <div class="text-[10px] font-bold text-slate-400 mt-1 uppercase italic">${t.date === today ? 'Today' : t.date} • ${t.cat}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="openEditModal(${t.id}); event.stopPropagation();" class="text-lg opacity-40 hover:opacity-100">✏️</button>
-                        <button onclick="deleteTask(${t.id}); event.stopPropagation();" class="text-lg opacity-40 hover:opacity-100">🗑️</button>
+                        <button onclick="openEditModal(${t.id}); event.stopPropagation();" class="text-lg">✏️</button>
+                        <button onclick="deleteTask(${t.id}); event.stopPropagation();" class="text-lg">🗑️</button>
                     </div>
                 </div>`;
             }).join('');
