@@ -2,67 +2,85 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>משימות הבית שלי</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .task-done { opacity: 0.5; background-color: #f3f4f6 !important; }
         .task-done .task-text { text-decoration: line-through; }
-        body { background-color: #f8fafc; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
-        .progress-bar { transition: width 0.4s ease-in-out; }
+        body { background-color: #f8fafc; font-family: sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; height: 100vh; }
+        .tasks-container { max-height: 45vh; overflow-y: auto; }
+        #editModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="p-4 pb-20">
+<body class="p-4 flex flex-col">
 
-    <div class="max-w-md mx-auto">
-        <header class="mb-6">
+    <div class="max-w-md mx-auto w-full flex flex-col h-full">
+        <header class="mb-4 shrink-0">
             <h1 class="text-3xl font-black text-center text-slate-800 italic">MY TASKS</h1>
-            <div class="mt-4 bg-gray-200 h-4 rounded-full overflow-hidden shadow-inner">
-                <div id="progressBar" class="progress-bar bg-gradient-to-l from-indigo-500 to-purple-500 h-full w-0"></div>
+            <div class="mt-2 bg-gray-200 h-3 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-indigo-500 transition-all duration-500 w-0"></div>
             </div>
-            <p id="progressText" class="text-center text-xs mt-1 font-bold text-slate-500">0% הושלמו</p>
+            <p id="progressText" class="text-center text-[10px] mt-1 font-bold text-slate-500 uppercase tracking-tighter">0% Completed</p>
         </header>
 
-        <div class="bg-white p-5 rounded-2xl shadow-xl mb-6 border border-slate-100">
-            <input id="taskInput" type="text" placeholder="מה המשימה הבאה?" class="border-b-2 border-gray-100 p-2 w-full text-lg outline-none mb-3 focus:border-indigo-400">
+        <div class="bg-white p-4 rounded-2xl shadow-lg mb-4 border border-slate-100 shrink-0">
+            <input id="taskInput" type="text" placeholder="מה המשימה הבאה?" class="border-b border-gray-100 p-2 w-full text-md outline-none mb-2 focus:border-indigo-400">
             <div class="flex gap-2">
-                <select id="catSelect" class="bg-gray-50 border-none p-2 flex-grow rounded-lg text-sm"></select>
-                <input id="dateInput" type="date" class="bg-gray-50 border-none p-2 rounded-lg text-sm">
+                <select id="catSelect" class="bg-gray-50 p-2 flex-grow rounded-lg text-sm outline-none"></select>
+                <input id="dateInput" type="date" class="bg-gray-50 p-2 rounded-lg text-sm outline-none">
             </div>
-            <button onclick="addTask()" class="bg-slate-800 text-white w-full mt-4 py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-transform">הוסף לרשימה</button>
+            <button onclick="addTask()" class="bg-slate-800 text-white w-full mt-3 py-2.5 rounded-xl font-bold active:scale-95 transition-transform shadow-md">הוסף לרשימה</button>
         </div>
 
-        <div class="flex gap-2 mb-6 overflow-x-auto pb-2" id="filterBar"></div>
-        <div id="tasksList" class="space-y-3 mb-6"></div>
+        <div class="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0 no-scrollbar" id="filterBar"></div>
 
-        <button id="clearDoneBtn" onclick="clearDoneTasks()" class="hidden w-full py-2 border-2 border-dashed border-red-200 text-red-400 rounded-lg text-sm font-medium hover:bg-red-50 mb-8">
+        <div id="tasksList" class="tasks-container space-y-3 mb-4 flex-grow pr-1"></div>
+
+        <button id="clearDoneBtn" onclick="clearDoneTasks()" class="hidden w-full py-2 border-2 border-dashed border-red-100 text-red-400 rounded-lg text-xs font-medium mb-4 shrink-0">
             מחק משימות שבוצעו ✨
         </button>
 
-        <details class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <summary class="text-gray-400 text-sm cursor-pointer font-medium text-center">⚙️ הגדרות קטגוריות</summary>
-            <div class="pt-4">
-                <div class="flex gap-2 mb-4">
-                    <input id="newCatInput" type="text" placeholder="שם קטגוריה" class="border p-2 flex-grow rounded-lg text-sm outline-none">
-                    <button onclick="addCategory()" class="bg-indigo-500 text-white px-4 rounded-lg font-bold">+</button>
+        <details class="bg-white p-3 rounded-xl border border-gray-100 shrink-0">
+            <summary class="text-gray-400 text-[11px] cursor-pointer text-center font-bold uppercase">⚙️ Categories Setup</summary>
+            <div class="pt-3">
+                <div class="flex gap-2 mb-2">
+                    <input id="newCatInput" type="text" placeholder="New category..." class="border p-2 flex-grow rounded-lg text-xs">
+                    <button onclick="addCategory()" class="bg-indigo-500 text-white px-3 rounded-lg">+</button>
                 </div>
                 <div id="catMngList" class="flex flex-wrap gap-2"></div>
             </div>
         </details>
     </div>
 
+    <div id="editModal">
+        <div class="bg-white p-6 rounded-2xl w-80 shadow-2xl">
+            <h3 class="font-bold mb-4 text-lg text-center">עריכת משימה</h3>
+            <input id="editTaskText" type="text" class="border w-full p-2 rounded mb-3 outline-none focus:border-indigo-400">
+            <input id="editTaskDate" type="date" class="border w-full p-2 rounded mb-3 outline-none focus:border-indigo-400">
+            <select id="editTaskCat" class="border w-full p-2 rounded mb-4 outline-none focus:border-indigo-400"></select>
+            <div class="flex gap-2">
+                <button onclick="closeEditModal()" class="flex-grow bg-gray-200 py-2 rounded-lg font-bold">ביטול</button>
+                <button onclick="saveEdit()" class="flex-grow bg-indigo-600 text-white py-2 rounded-lg font-bold">שמור</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // שימוש בשמות קבועים כדי שהמידע לא יימחק בשדרוגים הבאים
+        // השם הקבוע שסיכמנו עליו
         const DB_TASKS = 'HomeTaskApp_Final_Tasks';
         const DB_CATS = 'HomeTaskApp_Final_Cats';
 
+        // פלטת צבעים ייחודיים
+        const COLOR_PALETTE = ['#86efac', '#fbcfe8', '#e2e8f0', '#fed7aa', '#fef08a', '#bfdbfe', '#ddd6fe', '#fecaca', '#99f6e4', '#a5f3fc'];
+
         let tasks = JSON.parse(localStorage.getItem(DB_TASKS)) || [];
         let categories = JSON.parse(localStorage.getItem(DB_CATS)) || [
-            {name: 'מטבח', color: '#86efac'}, 
-            {name: 'כביסה', color: '#fbcfe8'}, 
-            {name: 'כללי', color: '#e2e8f0'}
+            {name: 'מטבח', color: '#86efac'}, {name: 'כביסה', color: '#fbcfe8'}, {name: 'כללי', color: '#e2e8f0'}
         ];
         let currentFilter = 'all';
+        let currentlyEditingId = null;
 
         document.getElementById('dateInput').valueAsDate = new Date();
 
@@ -73,19 +91,14 @@
 
         function addCategory() {
             const input = document.getElementById('newCatInput');
-            const colors = ['#fecaca', '#fed7aa', '#fef08a', '#d9f99d', '#bfdbfe', '#ddd6fe', '#fbcfe8'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            if (input.value.trim()) {
-                categories.push({name: input.value.trim(), color: randomColor});
+            const name = input.value.trim();
+            if (name && !categories.find(c => c.name === name)) {
+                // מציאת צבע שעדיין לא בשימוש
+                const usedColors = categories.map(c => c.color);
+                const availableColor = COLOR_PALETTE.find(color => !usedColors.includes(color)) || COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+                
+                categories.push({name: name, color: availableColor});
                 input.value = '';
-                saveData();
-                renderAll();
-            }
-        }
-
-        function deleteCategory(name) {
-            if (confirm(`למחוק את ${name}?`)) {
-                categories = categories.filter(c => c.name !== name);
                 saveData();
                 renderAll();
             }
@@ -103,117 +116,102 @@
             }
         }
 
+        function openEditModal(id) {
+            const task = tasks.find(t => t.id === id);
+            currentlyEditingId = id;
+            document.getElementById('editTaskText').value = task.text;
+            document.getElementById('editTaskDate').value = task.date;
+            const editCatSelect = document.getElementById('editTaskCat');
+            editCatSelect.innerHTML = categories.map(c => `<option value="${c.name}" ${c.name === task.cat ? 'selected' : ''}>${c.name}</option>`).join('');
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+        function saveEdit() {
+            const newText = document.getElementById('editTaskText').value;
+            const newDate = document.getElementById('editTaskDate').value;
+            const newCat = document.getElementById('editTaskCat').value;
+            tasks = tasks.map(t => t.id === currentlyEditingId ? {...t, text: newText, date: newDate, cat: newCat} : t);
+            saveData();
+            closeEditModal();
+            renderTasks(currentFilter);
+        }
+
         function toggleTask(id) {
             tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
             saveData();
             renderTasks(currentFilter);
         }
 
-        function editTask(id) {
-            const currentTask = tasks.find(t => t.id === id);
-            const newText = prompt("ערוך משימה:", currentTask.text);
-            if (newText && newText.trim() !== "") {
-                tasks = tasks.map(t => t.id === id ? {...t, text: newText.trim()} : t);
-                saveData();
-                renderTasks(currentFilter);
-            }
-        }
-
-        function repeatTomorrow(id) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const dateStr = tomorrow.toISOString().split('T')[0];
-            tasks = tasks.map(t => t.id === id ? {...t, date: dateStr, done: false} : t);
-            saveData();
-            renderTasks(currentFilter);
-        }
-
         function deleteTask(id) {
-            if(confirm("למחוק את המשימה?")) {
-                tasks = tasks.filter(t => t.id !== id);
-                saveData();
-                renderTasks(currentFilter);
-            }
+            if(confirm("למחוק?")) { tasks = tasks.filter(t => t.id !== id); saveData(); renderTasks(currentFilter); }
         }
 
         function clearDoneTasks() {
-            if(confirm("למחוק את כל המשימות שבוצעו?")) {
-                tasks = tasks.filter(t => !t.done);
-                saveData();
-                renderTasks(currentFilter);
-            }
+            if(confirm("למחוק את כל מה שבוצע?")) { tasks = tasks.filter(t => !t.done); saveData(); renderTasks(currentFilter); }
         }
 
         function renderAll() {
             const select = document.getElementById('catSelect');
             select.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            
             const catMng = document.getElementById('catMngList');
             catMng.innerHTML = categories.map(c => `
-                <span style="background-color: ${c.color}" class="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2 shadow-sm">
-                    ${c.name} <button onclick="deleteCategory('${c.name}')" class="opacity-40 hover:opacity-100">×</button>
-                </span>
-            `).join('');
-
+                <span style="background-color: ${c.color}" class="px-2 py-1 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
+                    ${c.name} 
+                    <button onclick="deleteCategory('${c.name}')" class="opacity-30 hover:opacity-100">×</button>
+                </span>`).join('');
             renderTasks(currentFilter);
         }
 
-        function updateProgress(filteredTasks) {
-            const total = filteredTasks.length;
-            const done = filteredTasks.filter(t => t.done).length;
-            const percent = total === 0 ? 0 : Math.round((done / total) * 100);
-            document.getElementById('progressBar').style.width = percent + '%';
-            document.getElementById('progressText').innerText = `${percent}% הושלמו (${done}/${total})`;
-            document.getElementById('clearDoneBtn').classList.toggle('hidden', done === 0);
+        function deleteCategory(name) {
+            if(confirm(`למחוק את ${name}?`)) {
+                categories = categories.filter(c => c.name !== name);
+                saveData();
+                renderAll();
+            }
         }
 
         function renderTasks(filter = 'all') {
             currentFilter = filter;
             const list = document.getElementById('tasksList');
-            const filterBar = document.getElementById('filterBar');
             const today = new Date().toISOString().split('T')[0];
 
-            let filterHtml = `<button onclick="renderTasks('all')" class="px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold border transition-all ${currentFilter === 'all' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-gray-500 border-slate-100'}">הכל</button>`;
-            filterHtml += `<button onclick="renderTasks('today')" class="px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold border transition-all ${currentFilter === 'today' ? 'bg-orange-500 text-white shadow-lg' : 'bg-white text-gray-500 border-slate-100'}">🔥 היום</button>`;
-            filterHtml += categories.map(c => `
-                <button onclick="renderTasks('${c.name}')" class="px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold border transition-all ${currentFilter === c.name ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-gray-500 border-slate-100'}">${c.name}</button>
-            `).join('');
-            filterBar.innerHTML = filterHtml;
+            let filterHtml = `<button onclick="renderTasks('all')" class="px-4 py-1.5 rounded-full whitespace-nowrap text-xs font-bold border ${currentFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-white text-gray-400'}">הכל</button>`;
+            filterHtml += `<button onclick="renderTasks('today')" class="px-4 py-1.5 rounded-full whitespace-nowrap text-xs font-bold border ${currentFilter === 'today' ? 'bg-orange-500 text-white' : 'bg-white text-gray-400'}">🔥 היום</button>`;
+            filterHtml += categories.map(c => `<button onclick="renderTasks('${c.name}')" class="px-4 py-1.5 rounded-full whitespace-nowrap text-xs font-bold border ${currentFilter === c.name ? 'bg-indigo-600 text-white' : 'bg-white text-gray-400'}">${c.name}</button>`).join('');
+            document.getElementById('filterBar').innerHTML = filterHtml;
 
             let filtered = tasks;
             if (filter === 'today') filtered = tasks.filter(t => t.date === today);
             else if (filter !== 'all') filtered = tasks.filter(t => t.cat === filter);
 
-            updateProgress(filtered);
-            filtered.sort((a,b) => a.done - b.done);
+            // מיון לפי תאריך (קרוב לרחוק)
+            filtered.sort((a, b) => new Date(a.date) - new Date(b.date) || a.done - b.done);
 
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="text-center text-gray-400 mt-10 italic py-10">אין משימות כאן...</div>`;
-                return;
-            }
+            const total = filtered.length;
+            const done = filtered.filter(t => t.done).length;
+            const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').innerText = `${percent}% Completed (${done}/${total})`;
+            document.getElementById('clearDoneBtn').classList.toggle('hidden', done === 0);
 
             list.innerHTML = filtered.map(t => {
                 const catObj = categories.find(c => c.name === t.cat) || {color: '#eee'};
                 return `
-                <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-3 border-r-8 transition-all ${t.done ? 'task-done' : 'hover:shadow-md'}" style="border-color: ${catObj.color}">
-                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-6 h-6 rounded-full accent-indigo-600 cursor-pointer">
-                    
+                <div class="bg-white p-3 rounded-xl shadow-sm flex items-center gap-3 border-r-4 ${t.done ? 'task-done' : ''}" style="border-color: ${catObj.color}">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-5 h-5 accent-indigo-600">
                     <div class="flex-grow" onclick="toggleTask(${t.id})">
-                        <div class="task-text font-bold text-slate-700 leading-tight">${t.text}</div>
-                        <div class="flex gap-2 mt-1">
-                             <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">${t.date === today ? 'היום' : t.date}</span>
-                        </div>
+                        <div class="task-text font-bold text-slate-700 text-sm leading-tight">${t.text}</div>
+                        <div class="text-[9px] font-bold text-slate-400 mt-0.5">${t.date === today ? 'היום' : t.date} | ${t.cat}</div>
                     </div>
-
                     <div class="flex gap-1">
-                        <button onclick="repeatTomorrow(${t.id}); event.stopPropagation();" title="למחר" class="p-1 grayscale hover:grayscale-0">🔄</button>
-                        <button onclick="editTask(${t.id}); event.stopPropagation();" class="p-1 grayscale hover:grayscale-0">✏️</button>
-                        <button onclick="deleteTask(${t.id}); event.stopPropagation();" class="p-1 grayscale hover:grayscale-0">🗑️</button>
+                        <button onclick="openEditModal(${t.id}); event.stopPropagation();" class="p-1">✏️</button>
+                        <button onclick="deleteTask(${t.id}); event.stopPropagation();" class="p-1">🗑️</button>
                     </div>
                 </div>`;
             }).join('');
         }
-
         renderAll();
     </script>
 </body>
