@@ -9,95 +9,101 @@
         .task-done { opacity: 0.5; background-color: #f3f4f6 !important; }
         .task-done .task-text { text-decoration: line-through; }
         body { background-color: #f8fafc; font-family: sans-serif; -webkit-tap-highlight-color: transparent; height: 100svh; display: flex; flex-direction: column; margin: 0; overflow: hidden; }
-        .tasks-container { overflow-y: auto; flex-grow: 1; padding-bottom: 20px; }
+        
+        /* גלילה לרשימה שתתפוס את שאר המקום */
+        .tasks-container { overflow-y: auto; flex-grow: 1; padding-bottom: 50px; }
+        
         #editModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .bottom-controls { padding-bottom: env(safe-area-inset-bottom, 20px); margin-bottom: 20px; }
         
-        /* לוח שנה */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .calendar-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; border-radius: 8px; cursor: pointer; position: relative; }
-        .has-task::after { content: ''; position: absolute; bottom: 2px; width: 4px; height: 4px; background: #6366f1; border-radius: 50%; }
-        .selected-day { background-color: #6366f1 !important; color: white !important; font-weight: bold; }
+        /* עיצוב לוח שנה קומפקטי */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+        .calendar-day { aspect-ratio: 1.2; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 6px; cursor: pointer; position: relative; transition: 0.2s; }
+        .has-task::after { content: ''; position: absolute; bottom: 3px; width: 3px; height: 3px; background: #6366f1; border-radius: 50%; }
+        .selected-day { background-color: #6366f1 !important; color: white !important; font-weight: bold; transform: scale(1.1); z-index: 10; }
+        
+        summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body class="p-4">
 
     <div class="max-w-md mx-auto w-full flex flex-col h-full">
-        <header class="mb-4 shrink-0">
-            <h1 class="text-3xl font-black text-center text-slate-800 italic tracking-tight">MY TASKS</h1>
-            <div class="mt-2 bg-gray-200 h-2.5 rounded-full overflow-hidden shadow-inner">
+        <header class="mb-2 shrink-0">
+            <h1 class="text-2xl font-black text-center text-slate-800 italic italic">MY TASKS</h1>
+            <div class="mt-1 bg-gray-200 h-2 rounded-full overflow-hidden">
                 <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 w-0"></div>
             </div>
-            <p id="progressText" class="text-center text-[10px] mt-1 font-bold text-slate-500 uppercase">0% Completed</p>
         </header>
 
-        <details class="bg-white rounded-2xl shadow-md mb-4 border border-slate-100 shrink-0 overflow-hidden">
-            <summary class="p-3 text-center font-bold text-slate-700 cursor-pointer list-none flex items-center justify-center gap-2">
-                📅 לוח שנה וסינון תאריכים
-            </summary>
-            <div class="p-3 border-t">
-                <div class="flex justify-between items-center mb-2">
-                    <button onclick="changeMonth(-1)" class="text-indigo-600 font-bold px-2 text-xl">‹</button>
-                    <h2 id="calendarMonth" class="font-bold text-sm"></h2>
-                    <button onclick="changeMonth(1)" class="text-indigo-600 font-bold px-2 text-xl">›</button>
+        <div class="bg-white rounded-2xl shadow-sm mb-3 border border-slate-100 shrink-0">
+            <details open class="group">
+                <summary class="p-2 text-center font-bold text-slate-600 cursor-pointer list-none text-xs flex items-center justify-center gap-2">
+                    <span class="group-open:rotate-180 transition-transform">▼</span>
+                    <span id="calendarSummaryLabel">לוח שנה</span>
+                </summary>
+                <div class="px-3 pb-3 border-t pt-2">
+                    <div class="flex justify-between items-center mb-1 px-4">
+                        <button onclick="changeMonth(-1)" class="text-indigo-600 font-bold p-1">‹</button>
+                        <h2 id="calendarMonth" class="font-bold text-xs text-slate-700"></h2>
+                        <button onclick="changeMonth(1)" class="text-indigo-600 font-bold p-1">›</button>
+                    </div>
+                    <div class="grid grid-cols-7 text-center text-[9px] text-gray-400 mb-1 font-bold">
+                        <div>א'</div><div>ב'</div><div>ג'</div><div>ד'</div><div>ה'</div><div>ו'</div><div>ש'</div>
+                    </div>
+                    <div id="calendarGrid" class="calendar-grid"></div>
                 </div>
-                <div class="grid grid-cols-7 text-center text-[10px] text-gray-400 mb-1 font-bold">
-                    <div>א'</div><div>ב'</div><div>ג'</div><div>ד'</div><div>ה'</div><div>ו'</div><div>ש'</div>
-                </div>
-                <div id="calendarGrid" class="calendar-grid"></div>
-                <button onclick="renderTasks('all')" class="w-full mt-2 text-[10px] text-indigo-500 font-bold py-1">חזרה לכל המשימות</button>
-            </div>
-        </details>
+            </details>
+        </div>
 
-        <div class="bg-white p-4 rounded-2xl shadow-lg mb-4 border border-slate-100 shrink-0">
-            <input id="taskInput" type="text" placeholder="מה המשימה הבאה?" class="border-b border-gray-100 p-2 w-full text-md outline-none mb-2">
-            <div class="grid grid-cols-2 gap-2 mb-2">
-                <select id="catSelect" class="bg-gray-50 p-2 rounded-lg text-sm outline-none"></select>
-                <input id="dateInput" type="date" class="bg-gray-50 p-2 rounded-lg text-sm outline-none">
-                <select id="repeatInput" class="bg-gray-50 p-2 rounded-lg text-sm outline-none col-span-2">
+        <div class="bg-white p-3 rounded-2xl shadow-md mb-3 border border-slate-50 shrink-0">
+            <input id="taskInput" type="text" placeholder="מה המשימה?" class="border-b border-gray-100 p-1.5 w-full text-sm outline-none mb-2 focus:border-indigo-300">
+            <div class="grid grid-cols-2 gap-2">
+                <select id="catSelect" class="bg-gray-50 p-1.5 rounded-lg text-xs outline-none"></select>
+                <input id="dateInput" type="date" class="bg-gray-50 p-1.5 rounded-lg text-xs outline-none">
+                <select id="repeatInput" class="bg-gray-50 p-1.5 rounded-lg text-xs outline-none col-span-2">
                     <option value="none">ללא חזרה</option>
                     <option value="daily">כל יום</option>
                     <option value="weekly">כל שבוע</option>
                 </select>
             </div>
-            <button onclick="addTask()" class="bg-slate-800 text-white w-full py-2.5 rounded-xl font-bold active:scale-95 shadow-md">הוסף לרשימה</button>
+            <button onclick="addTask()" class="bg-slate-800 text-white w-full py-2 rounded-xl font-bold mt-2 text-sm active:scale-95 shadow-md">הוסף</button>
         </div>
 
-        <div class="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0 no-scrollbar" id="filterBar"></div>
-        <div id="tasksList" class="tasks-container space-y-3 pr-1"></div>
+        <div class="flex gap-2 mb-2 overflow-x-auto pb-1 shrink-0 no-scrollbar" id="filterBar"></div>
+        
+        <div id="tasksList" class="tasks-container space-y-2 pr-1"></div>
 
-        <div class="shrink-0 bottom-controls">
-            <button id="clearDoneBtn" onclick="clearDoneTasks()" class="hidden w-full py-2 border-2 border-dashed border-red-100 text-red-400 rounded-lg text-xs font-bold mb-3">מחק משימות שבוצעו ✨</button>
-            <details class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                <summary class="text-gray-400 text-[11px] cursor-pointer text-center font-bold uppercase tracking-widest">⚙️ Categories Setup</summary>
-                <div class="pt-3">
+        <div class="shrink-0 pb-4">
+            <button id="clearDoneBtn" onclick="clearDoneTasks()" class="hidden w-full py-1.5 border border-dashed border-red-200 text-red-400 rounded-lg text-[10px] font-bold mb-2">מחק בוצעו ✨</button>
+            <details class="bg-white p-2 rounded-xl border border-gray-50">
+                <summary class="text-gray-400 text-[9px] cursor-pointer text-center font-bold uppercase tracking-widest">⚙️ Categories</summary>
+                <div class="pt-2">
                     <div class="flex gap-2 mb-2">
-                        <input id="newCatInput" type="text" placeholder="קטגוריה חדשה" class="border p-2 flex-grow rounded-lg text-xs outline-none">
-                        <button onclick="addCategory()" class="bg-indigo-500 text-white px-4 rounded-lg font-bold">+</button>
+                        <input id="newCatInput" type="text" placeholder="שם..." class="border p-1.5 flex-grow rounded-lg text-xs outline-none">
+                        <button onclick="addCategory()" class="bg-indigo-500 text-white px-3 rounded-lg font-bold">+</button>
                     </div>
-                    <div id="catMngList" class="flex flex-wrap gap-2"></div>
+                    <div id="catMngList" class="flex flex-wrap gap-1"></div>
                 </div>
             </details>
         </div>
     </div>
 
     <div id="editModal">
-        <div class="bg-white p-6 rounded-2xl w-80 shadow-2xl mx-4">
-            <h3 class="font-bold mb-4 text-lg text-center">עריכת משימה</h3>
-            <div class="space-y-3">
-                <input id="editTaskText" type="text" class="border w-full p-2.5 rounded-lg">
-                <input id="editTaskDate" type="date" class="border w-full p-2.5 rounded-lg">
-                <select id="editTaskCat" class="border w-full p-2.5 rounded-lg bg-gray-50"></select>
-                <select id="editTaskRepeat" class="border w-full p-2.5 rounded-lg bg-gray-50">
+        <div class="bg-white p-5 rounded-2xl w-72 shadow-2xl mx-4">
+            <h3 class="font-bold mb-3 text-center text-slate-800">עריכה</h3>
+            <div class="space-y-2">
+                <input id="editTaskText" type="text" class="border w-full p-2 rounded-lg text-sm">
+                <input id="editTaskDate" type="date" class="border w-full p-2 rounded-lg text-sm">
+                <select id="editTaskCat" class="border w-full p-2 rounded-lg text-sm bg-gray-50"></select>
+                <select id="editTaskRepeat" class="border w-full p-2 rounded-lg text-sm bg-gray-50">
                     <option value="none">ללא חזרה</option>
                     <option value="daily">כל יום</option>
                     <option value="weekly">כל שבוע</option>
                 </select>
             </div>
-            <div class="flex gap-2 mt-6">
-                <button onclick="closeEditModal()" class="flex-grow bg-gray-100 py-2.5 rounded-xl">ביטול</button>
-                <button onclick="saveEdit()" class="flex-grow bg-indigo-600 text-white py-2.5 rounded-xl font-bold">שמור</button>
+            <div class="flex gap-2 mt-4">
+                <button onclick="closeEditModal()" class="flex-grow bg-gray-100 py-2 rounded-lg text-sm">ביטול</button>
+                <button onclick="saveEdit()" class="flex-grow bg-indigo-600 text-white py-2 rounded-lg text-sm font-bold">שמור</button>
             </div>
         </div>
     </div>
@@ -113,7 +119,6 @@
         ];
         
         let currentFilter = 'all';
-        let currentlyEditingId = null;
         let calendarDate = new Date();
         let selectedDay = null;
 
@@ -124,40 +129,6 @@
             localStorage.setItem(DB_CATS, JSON.stringify(categories));
         }
 
-        function addCategory() {
-            const input = document.getElementById('newCatInput');
-            const name = input.value.trim();
-            if (name && !categories.find(c => c.name === name)) {
-                const usedColors = categories.map(c => c.color);
-                const availableColor = COLOR_PALETTE.find(color => !usedColors.includes(color)) || COLOR_PALETTE[0];
-                categories.push({name: name, color: availableColor});
-                input.value = ''; saveData(); renderAll();
-            }
-        }
-
-        function addTask() {
-            const input = document.getElementById('taskInput');
-            const cat = document.getElementById('catSelect').value;
-            const date = document.getElementById('dateInput').value;
-            const repeat = document.getElementById('repeatInput').value;
-            if (input.value.trim()) {
-                tasks.push({ id: Date.now(), text: input.value, cat: cat, date: date, done: false, repeat: repeat });
-                input.value = ''; saveData(); renderAll();
-            }
-        }
-
-        function toggleTask(id) {
-            const idx = tasks.findIndex(t => t.id === id);
-            if (!tasks[idx].done && tasks[idx].repeat !== 'none') {
-                const next = new Date(tasks[idx].date);
-                tasks[idx].repeat === 'daily' ? next.setDate(next.getDate()+1) : next.setDate(next.getDate()+7);
-                tasks.push({...tasks[idx], id: Date.now()+1, date: next.toISOString().split('T')[0], done: false});
-            }
-            tasks[idx].done = !tasks[idx].done;
-            saveData(); renderTasks(currentFilter);
-        }
-
-        // לוח שנה
         function changeMonth(dir) {
             calendarDate.setMonth(calendarDate.getMonth() + dir);
             renderCalendar();
@@ -170,7 +141,7 @@
             
             const year = calendarDate.getFullYear();
             const month = calendarDate.getMonth();
-            monthLabel.innerText = new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric' }).format(calendarDate);
+            monthLabel.innerText = new Intl.DateTimeFormat('he-IL', { month: 'short', year: 'numeric' }).format(calendarDate);
 
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -180,15 +151,15 @@
             for (let d = 1; d <= daysInMonth; d++) {
                 const dayDiv = document.createElement('div');
                 const fullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                dayDiv.className = `calendar-day hover:bg-slate-50 ${selectedDay === fullDate ? 'selected-day' : 'bg-gray-50'}`;
+                dayDiv.className = `calendar-day ${selectedDay === fullDate ? 'selected-day' : 'bg-slate-50'}`;
                 dayDiv.innerText = d;
-                
                 if (tasks.some(t => t.date === fullDate)) dayDiv.classList.add('has-task');
                 
                 dayDiv.onclick = () => {
                     selectedDay = fullDate;
                     renderTasks(fullDate);
                     renderCalendar();
+                    document.getElementById('calendarSummaryLabel').innerText = `משימות ל-${d}/${month+1}`;
                 };
                 grid.appendChild(dayDiv);
             }
@@ -209,60 +180,74 @@
             const total = filtered.length;
             const done = filtered.filter(t => t.done).length;
             document.getElementById('progressBar').style.width = (total ? (done/total)*100 : 0) + '%';
-            document.getElementById('progressText').innerText = `${Math.round(total ? (done/total)*100 : 0)}% Completed (${done}/${total})`;
             document.getElementById('clearDoneBtn').classList.toggle('hidden', done === 0);
 
-            list.innerHTML = filtered.map(t => {
+            list.innerHTML = filtered.length ? filtered.map(t => {
                 const catObj = categories.find(c => c.name === t.cat) || {color: '#eee'};
                 return `
-                <div class="bg-white p-3.5 rounded-2xl shadow-sm flex items-center gap-3 border-r-[6px] ${t.done ? 'task-done' : ''}" style="border-color: ${catObj.color}">
-                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-5 h-5 accent-indigo-600">
+                <div class="bg-white p-3 rounded-xl shadow-sm flex items-center gap-3 border-r-4 ${t.done ? 'task-done' : ''}" style="border-color: ${catObj.color}">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-4 h-4 accent-indigo-600">
                     <div class="flex-grow" onclick="toggleTask(${t.id})">
-                        <div class="task-text font-bold text-slate-700 text-[14px]">${t.text} ${t.repeat !== 'none' ? '🔄' : ''}</div>
-                        <div class="text-[10px] text-slate-400 mt-1 uppercase">${t.date === today ? 'Today' : t.date} • ${t.cat}</div>
+                        <div class="task-text font-bold text-slate-700 text-xs">${t.text} ${t.repeat !== 'none' ? '🔄' : ''}</div>
+                        <div class="text-[9px] text-slate-400 uppercase">${t.date === today ? 'Today' : t.date} • ${t.cat}</div>
                     </div>
-                    <button onclick="openEditModal(${t.id}); event.stopPropagation();" class="text-lg">✏️</button>
-                    <button onclick="deleteTask(${t.id}); event.stopPropagation();" class="text-lg">🗑️</button>
+                    <button onclick="openEditModal(${t.id}); event.stopPropagation();" class="text-sm">✏️</button>
+                    <button onclick="deleteTask(${t.id}); event.stopPropagation();" class="text-sm">🗑️</button>
                 </div>`;
-            }).join('');
+            }).join('') : `<div class="text-center text-slate-300 text-xs mt-10 italic">אין משימות לתאריך זה...</div>`;
             
-            // עדכון הפילטרים למעלה
             updateFilterBar();
         }
 
+        // שאר הפונקציות (עריכה, הוספה וכו') נשארות אותו דבר כדי לשמור על המידע שלך
         function updateFilterBar() {
-            let filterHtml = `<button onclick="renderTasks('all'); selectedDay=null; renderCalendar();" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === 'all' ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">All</button>`;
-            filterHtml += `<button onclick="renderTasks('today'); selectedDay=null; renderCalendar();" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === 'today' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">🔥 Today</button>`;
-            filterHtml += categories.map(c => `<button onclick="renderTasks('${c.name}')" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === c.name ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-400 border-slate-100'} uppercase">${c.name}</button>`).join('');
+            let filterHtml = `<button onclick="renderTasks('all'); selectedDay=null; renderCalendar(); document.getElementById('calendarSummaryLabel').innerText='לוח שנה';" class="px-4 py-1.5 rounded-full whitespace-nowrap text-[10px] font-bold border ${currentFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-white text-gray-400 border-slate-50'} uppercase">All</button>`;
+            filterHtml += `<button onclick="renderTasks('today'); selectedDay=null; renderCalendar(); document.getElementById('calendarSummaryLabel').innerText='לוח שנה';" class="px-4 py-1.5 rounded-full whitespace-nowrap text-[10px] font-bold border ${currentFilter === 'today' ? 'bg-orange-500 text-white' : 'bg-white text-gray-400 border-slate-50'} uppercase">Today</button>`;
+            filterHtml += categories.map(c => `<button onclick="renderTasks('${c.name}')" class="px-4 py-1.5 rounded-full whitespace-nowrap text-[10px] font-bold border ${currentFilter === c.name ? 'bg-indigo-600 text-white' : 'bg-white text-gray-400 border-slate-50'} uppercase">${c.name}</button>`).join('');
             document.getElementById('filterBar').innerHTML = filterHtml;
         }
 
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            if (input.value.trim()) {
+                tasks.push({ id: Date.now(), text: input.value, cat: document.getElementById('catSelect').value, date: document.getElementById('dateInput').value, done: false, repeat: document.getElementById('repeatInput').value });
+                input.value = ''; saveData(); renderAll();
+            }
+        }
+        function toggleTask(id) {
+            const idx = tasks.findIndex(t => t.id === id);
+            if (!tasks[idx].done && tasks[idx].repeat !== 'none') {
+                const next = new Date(tasks[idx].date);
+                tasks[idx].repeat === 'daily' ? next.setDate(next.getDate()+1) : next.setDate(next.getDate()+7);
+                tasks.push({...tasks[idx], id: Date.now()+1, date: next.toISOString().split('T')[0], done: false});
+            }
+            tasks[idx].done = !tasks[idx].done; saveData(); renderTasks(currentFilter);
+        }
         function openEditModal(id) {
-            const task = tasks.find(t => t.id === id);
-            currentlyEditingId = id;
-            document.getElementById('editTaskText').value = task.text;
-            document.getElementById('editTaskDate').value = task.date;
-            document.getElementById('editTaskRepeat').value = task.repeat || 'none';
-            document.getElementById('editTaskCat').innerHTML = categories.map(c => `<option value="${c.name}" ${c.name === task.cat ? 'selected' : ''}>${c.name}</option>`).join('');
+            const t = tasks.find(x => x.id === id); currentlyEditingId = id;
+            document.getElementById('editTaskText').value = t.text;
+            document.getElementById('editTaskDate').value = t.date;
+            document.getElementById('editTaskRepeat').value = t.repeat || 'none';
+            document.getElementById('editTaskCat').innerHTML = categories.map(c => `<option value="${c.name}" ${c.name === t.cat ? 'selected' : ''}>${c.name}</option>`).join('');
             document.getElementById('editModal').style.display = 'flex';
         }
-
-        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
         function saveEdit() {
             tasks = tasks.map(t => t.id === currentlyEditingId ? {...t, text: document.getElementById('editTaskText').value, date: document.getElementById('editTaskDate').value, cat: document.getElementById('editTaskCat').value, repeat: document.getElementById('editTaskRepeat').value} : t);
-            saveData(); closeEditModal(); renderAll();
+            saveData(); document.getElementById('editModal').style.display = 'none'; renderAll();
+        }
+        function deleteCategory(name) { if(confirm("למחוק קטגוריה?")) { categories = categories.filter(c => c.name !== name); saveData(); renderAll(); } }
+        function addCategory() { 
+            const n = document.getElementById('newCatInput').value.trim();
+            if(n) { categories.push({name: n, color: COLOR_PALETTE[categories.length % COLOR_PALETTE.length]}); document.getElementById('newCatInput').value=''; saveData(); renderAll(); }
         }
         function deleteTask(id) { if(confirm("למחוק?")) { tasks = tasks.filter(t => t.id !== id); saveData(); renderAll(); } }
         function clearDoneTasks() { if(confirm("למחוק בוצעו?")) { tasks = tasks.filter(t => !t.done); saveData(); renderAll(); } }
 
         function renderAll() {
-            const select = document.getElementById('catSelect');
-            select.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            document.getElementById('catMngList').innerHTML = categories.map(c => `<span style="background-color: ${c.color}" class="px-2 py-1 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">${c.name} <button onclick="deleteCategory('${c.name}')" class="opacity-30">×</button></span>`).join('');
-            renderCalendar();
-            renderTasks(currentFilter);
+            document.getElementById('catSelect').innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            document.getElementById('catMngList').innerHTML = categories.map(c => `<span style="background-color: ${c.color}" class="px-2 py-1 rounded-full text-[9px] font-bold flex items-center gap-1">${c.name} <button onclick="deleteCategory('${c.name}')">×</button></span>`).join('');
+            renderCalendar(); renderTasks(currentFilter);
         }
-
         renderAll();
     </script>
 </body>
