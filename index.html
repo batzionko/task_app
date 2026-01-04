@@ -4,38 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>משימות הבית שלי</title>
+    
+    <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/96/todo-list.png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/180/todo-list.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="המשימות שלי">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .task-done { opacity: 0.5; background-color: #f3f4f6 !important; }
         .task-done .task-text { text-decoration: line-through; }
-        
-        body { 
-            background-color: #f8fafc; 
-            font-family: sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
-            /* שינוי קריטי: מאפשרים לכל הגוף להיגלגל */
-            overflow-y: auto; 
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        /* הסרת הגלילה הפנימית המצמצמת */
+        body { background-color: #f8fafc; font-family: sans-serif; -webkit-tap-highlight-color: transparent; overflow-y: auto; min-height: 100vh; margin: 0; }
         .tasks-container { width: 100%; }
-        
         #editModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* עיצוב לוח שנה */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
         .calendar-day { aspect-ratio: 1.2; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 6px; cursor: pointer; position: relative; }
         .has-task::after { content: ''; position: absolute; bottom: 3px; width: 3px; height: 3px; background: #6366f1; border-radius: 50%; }
         .selected-day { background-color: #6366f1 !important; color: white !important; font-weight: bold; }
-        
         summary::-webkit-details-marker { display: none; }
         details summary { list-style: none; }
     </style>
 </head>
-<body class="p-4 pb-20"> <div class="max-w-md mx-auto w-full flex flex-col">
+<body class="p-4 pb-20">
+
+    <div class="max-w-md mx-auto w-full flex flex-col">
         <header class="mb-4 text-center">
             <h1 class="text-3xl font-black text-slate-800 italic">MY TASKS</h1>
             <div class="mt-2 bg-gray-200 h-2.5 rounded-full overflow-hidden shadow-inner">
@@ -87,12 +80,10 @@
         </div>
 
         <div class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar shrink-0" id="filterBar"></div>
-        
         <div id="tasksList" class="tasks-container space-y-3"></div>
 
         <div class="mt-8 space-y-4">
             <button id="clearDoneBtn" onclick="clearDoneTasks()" class="hidden w-full py-2 border-2 border-dashed border-red-100 text-red-400 rounded-xl text-xs font-bold">מחק משימות שבוצעו ✨</button>
-            
             <details class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
                 <summary class="text-gray-400 text-[11px] cursor-pointer text-center font-bold uppercase tracking-widest">⚙️ Categories Setup</summary>
                 <div class="pt-3">
@@ -127,6 +118,7 @@
     </div>
 
     <script>
+        // ... (הסקריפט נשאר בדיוק אותו דבר כמו בגרסה הקודמת)
         const DB_TASKS = 'HomeTaskApp_Final_Tasks';
         const DB_CATS = 'HomeTaskApp_Final_Cats';
         const COLOR_PALETTE = ['#86efac', '#fbcfe8', '#e2e8f0', '#fed7aa', '#fef08a', '#bfdbfe', '#ddd6fe', '#fecaca', '#99f6e4', '#a5f3fc'];
@@ -147,7 +139,6 @@
             localStorage.setItem(DB_CATS, JSON.stringify(categories));
         }
 
-        // לוח שנה
         function changeMonth(dir) {
             calendarDate.setMonth(calendarDate.getMonth() + dir);
             renderCalendar();
@@ -162,7 +153,6 @@
             monthLabel.innerText = new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric' }).format(calendarDate);
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-
             for (let i = 0; i < firstDay; i++) { grid.appendChild(document.createElement('div')); }
             for (let d = 1; d <= daysInMonth; d++) {
                 const dayDiv = document.createElement('div');
@@ -192,7 +182,7 @@
                     repeat: document.getElementById('repeatInput').value 
                 });
                 input.value = '';
-                document.getElementById('addTaskDetails').open = false; // סגירת המגירה אחרי הוספה
+                document.getElementById('addTaskDetails').open = false;
                 saveData(); renderAll();
             }
         }
@@ -201,24 +191,20 @@
             currentFilter = filter;
             const list = document.getElementById('tasksList');
             const today = new Date().toISOString().split('T')[0];
-
             let filtered = tasks;
             if (filter === 'today') filtered = tasks.filter(t => t.date === today);
             else if (filter.match(/^\d{4}-\d{2}-\d{2}$/)) filtered = tasks.filter(t => t.date === filter);
             else if (filter !== 'all') filtered = tasks.filter(t => t.cat === filter);
-
             filtered.sort((a, b) => new Date(a.date) - new Date(b.date) || a.done - b.done);
-
             const total = filtered.length;
             const done = filtered.filter(t => t.done).length;
             document.getElementById('progressBar').style.width = (total ? (done/total)*100 : 0) + '%';
             document.getElementById('progressText').innerText = `${Math.round(total ? (done/total)*100 : 0)}% Completed (${done}/${total})`;
             document.getElementById('clearDoneBtn').classList.toggle('hidden', done === 0);
-
             list.innerHTML = filtered.length ? filtered.map(t => {
                 const catObj = categories.find(c => c.name === t.cat) || {color: '#eee'};
                 return `
-                <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-3 border-r-[6px] ${t.done ? 'task-done' : 'hover:shadow-md transition-shadow'}" style="border-color: ${catObj.color}">
+                <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-3 border-r-[6px] ${t.done ? 'task-done' : ''}" style="border-color: ${catObj.color}">
                     <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-5 h-5 accent-indigo-600">
                     <div class="flex-grow" onclick="toggleTask(${t.id})">
                         <div class="task-text font-bold text-slate-700 text-sm">${t.text} ${t.repeat !== 'none' ? '🔄' : ''}</div>
@@ -230,11 +216,9 @@
                     </div>
                 </div>`;
             }).join('') : `<div class="text-center text-slate-300 py-10 italic">אין משימות להצגה...</div>`;
-            
             updateFilterBar();
         }
 
-        // פונקציות עזר
         function updateFilterBar() {
             let html = `<button onclick="renderTasks('all'); selectedDay=null; renderCalendar();" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-white text-gray-400 border-slate-100'} uppercase shadow-sm">All</button>`;
             html += `<button onclick="renderTasks('today'); selectedDay=null; renderCalendar();" class="px-5 py-2 rounded-full whitespace-nowrap text-[11px] font-black border ${currentFilter === 'today' ? 'bg-orange-500 text-white' : 'bg-white text-gray-400 border-slate-100'} uppercase shadow-sm">Today</button>`;
@@ -280,7 +264,6 @@
             document.getElementById('catMngList').innerHTML = categories.map(c => `<span style="background-color: ${c.color}" class="px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-2 shadow-sm">${c.name} <button onclick="deleteCategory('${c.name}')" class="opacity-50">×</button></span>`).join('');
             renderCalendar(); renderTasks(currentFilter);
         }
-
         renderAll();
     </script>
 </body>
